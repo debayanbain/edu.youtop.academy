@@ -58,6 +58,13 @@ body {
   --color-brutal-white: var(--brutal-white);
   --color-brutal-orange: var(--brutal-orange);
   --color-brutal-pink: var(--brutal-pink);
+
+  /* ── New Neo-Brutal colors ── */
+  --color-nb-primary: var(--nb-primary);
+  --color-nb-accent: var(--nb-accent);
+  --color-nb-lime: var(--nb-lime);
+  --color-nb-bg: var(--nb-bg);
+  --color-nb-border: var(--nb-border);
 }
 
 /* ════════════════════════════════════════════
@@ -118,6 +125,12 @@ body {
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #2d2d44;
   --sidebar-ring: #ffcc00;
+
+  --nb-primary: #4F46E5;
+  --nb-accent: #FACC15;
+  --nb-lime: #A3E635;
+  --nb-bg: #F8FAFC;
+  --nb-border: #000000;
 }
 
 /* ════════════════════════════════════════════

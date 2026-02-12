@@ -25,6 +25,12 @@ const buttonVariants = cva(
           "bg-destructive text-white",
         outline:
           "bg-transparent text-[var(--brutal-dark)] hover:bg-[var(--brutal-yellow)]",
+        white:
+          "bg-white text-[var(--brutal-black)] hover:bg-[var(--brutal-yellow)]",
+        accent:
+          "bg-[var(--nb-accent)] text-[var(--brutal-dark)]",
+        lime:
+          "bg-[var(--nb-lime)] text-[var(--brutal-dark)]",
         secondary:
           "bg-secondary text-secondary-foreground",
         ghost:
