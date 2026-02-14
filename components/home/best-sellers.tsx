@@ -11,7 +11,7 @@ const BestSellers = () => {
       <div>
         <div className="flex justify-between items-end mb-6">
           <div>
-            <h2 className="font-bold text-3xl">Best Sellers</h2>
+            <h2 className="font-bold text-2xl sm:text-3xl">Best Sellers</h2>
             <div className="h-2 w-20 bg-brutal-yellow mt-1 rounded-sm" />
           </div>
           <a
@@ -68,10 +68,10 @@ const BestSellers = () => {
 
       {/* Job & Career Highlights */}
       <div
-        className="bg-card border-3 border-border p-8 rounded-xl"
+        className="bg-card border-3 border-border p-4 sm:p-8 rounded-xl"
         style={{ boxShadow: "5px 5px 0px 0px var(--brutal-black)" }}
       >
-        <h2 className="font-bold text-3xl mb-6 flex items-center gap-3">
+        <h2 className="font-bold text-2xl sm:text-3xl mb-4 sm:mb-6 flex items-center gap-3">
           <Briefcase className="text-brutal-purple" />
           Job &amp; Career Highlights
         </h2>
@@ -84,7 +84,7 @@ const BestSellers = () => {
               <div className="bg-brutal-dark text-white px-3 py-1 font-bold text-sm whitespace-nowrap rounded-md">
                 NOV {i + 10}
               </div>
-              <div className="flex-grow">
+              <div className="grow">
                 <h4 className="font-bold text-lg">
                   WB Civil Service Application Opens
                 </h4>

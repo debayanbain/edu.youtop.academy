@@ -36,7 +36,7 @@ export const MOCK_BOOKS: Book[] = [
     originalPrice: 499,
     tag: "Best Seller",
     coverColor: "bg-gradient-to-br from-purple-500 to-indigo-600",
-    imageLink: "/images/hs.png"
+    imageLink: "/images/mh.png"
   },
   {
     id: 2,
@@ -46,7 +46,7 @@ export const MOCK_BOOKS: Book[] = [
     originalPrice: 399,
     tag: "New",
     coverColor: "bg-gradient-to-br from-amber-400 to-orange-500",
-    imageLink: "/images/mh.png"
+    imageLink: "/images/hs.png"
   },
   {
     id: 3,

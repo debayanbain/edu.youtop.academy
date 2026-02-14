@@ -26,8 +26,8 @@ const LatestUpdates = () => {
                   update.type === "Exam"
                     ? "blue"
                     : update.type === "Job"
-                    ? "green"
-                    : "yellow"
+                      ? "green"
+                      : "yellow"
                 }
               >
                 {update.type}

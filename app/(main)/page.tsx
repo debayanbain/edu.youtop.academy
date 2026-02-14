@@ -6,7 +6,7 @@ import CtaSection from "@/components/home/cta-section";
 
 export default function HomePage() {
   return (
-    <div className="space-y-16">
+    <div className="space-y-8 sm:space-y-16">
       <HeroSection />
       <FeaturesGrid />
 
