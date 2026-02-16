@@ -13,7 +13,10 @@ export interface Book {
   originalPrice: number;
   tag: string;
   coverColor: string;
-  imageLink?: string
+  imageLink?: string;
+  class: string;
+  subject: string;
+  description?: string;
 }
 
 export interface Feature {

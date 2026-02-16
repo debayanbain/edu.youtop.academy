@@ -24,14 +24,16 @@ const BestSellers = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {MOCK_BOOKS.slice(0, 2).map((book) => (
-            <Card key={book.id} noPadding hoverEffect className="flex flex-col h-full">
+            <Card key={book.id} noPadding hoverEffect className="group flex flex-col h-full">
               <div className={`relative h-48 ${book.coverColor} border-b-3 border-border overflow-hidden`}>
                 {book.imageLink ? (
                   <Image
                     src={book.imageLink}
                     alt={book.title}
+                    placeholder="blur"
+                    blurDataURL={book.imageLink}
                     fill
-                    className="object-cover"
+                    className="object-cover transition-transform duration-500 ease-out group-hover:scale-110"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
@@ -79,7 +81,7 @@ const BestSellers = () => {
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="flex flex-col sm:flex-row gap-4 items-start sm:items-center p-4 bg-muted border-2 border-border hover:bg-brutal-yellow/30 transition-colors cursor-pointer rounded-lg"
+              className="flex flex-col sm:flex-row gap-4 items-start sm:items-center p-4 bg-muted border-2 border-border hover:bg-nb-lime transition-colors cursor-pointer rounded-lg"
             >
               <div className="bg-brutal-dark text-white px-3 py-1 font-bold text-sm whitespace-nowrap rounded-md">
                 NOV {i + 10}

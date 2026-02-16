@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
 import { LuMenu, LuBookOpen } from 'react-icons/lu';
 import { Button } from "../ui/button";
 import {
@@ -24,6 +25,8 @@ const NAV_LINKS = [
 ];
 
 const Navbar = () => {
+  const pathname = usePathname();
+
   return (
     <nav
       className="bg-card border-b-3 border-border sticky top-0 z-50"
@@ -46,15 +49,26 @@ const Navbar = () => {
 
           {/* Desktop Nav */}
           <div className="hidden lg:flex items-center gap-1">
-            {NAV_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="px-3 py-2 text-sm font-bold hover:bg-brutal-yellow/30 rounded-md transition-colors"
-              >
-                {link.label}
-              </Link>
-            ))}
+            {NAV_LINKS.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`px-3 py-2 text-sm font-bold rounded-md transition-colors relative group ${isActive ? "text-brutal-dark" : "hover:bg-brutal-yellow/30"
+                    }`}
+                >
+                  {link.label}
+                  {isActive && (
+                    <motion.div
+                      layoutId="navbar-underline"
+                      className="absolute bottom-0 left-0 right-0 h-1 bg-brutal-purple border-t border-border z-10"
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
+                  )}
+                </Link>
+              );
+            })}
           </div>
 
           {/* Desktop CTA — hidden on mobile */}
@@ -95,17 +109,23 @@ const Navbar = () => {
                 </SheetHeader>
 
                 {/* Nav Links */}
-                <div className="flex flex-col px-4 py-3 gap-1">
-                  {NAV_LINKS.map((link) => (
-                    <SheetClose key={link.href} asChild>
-                      <Link
-                        href={link.href}
-                        className="block px-3 py-2.5 text-sm font-bold hover:bg-brutal-yellow/30 rounded-md transition-colors border-2 border-transparent hover:border-border"
-                      >
-                        {link.label}
-                      </Link>
-                    </SheetClose>
-                  ))}
+                <div className="flex flex-col px-3 py-3 gap-1">
+                  {NAV_LINKS.map((link) => {
+                    const isActive = pathname === link.href;
+                    return (
+                      <SheetClose key={link.href} asChild>
+                        <Link
+                          href={link.href}
+                          className={`block px-3 py-3 text-sm font-bold rounded-md transition-all border-2 ${isActive
+                            ? "bg-brutal-yellow text-brutal-dark border-border shadow-[2px_2px_0_0_#000]"
+                            : "hover:bg-brutal-yellow/20 border-transparent"
+                            }`}
+                        >
+                          {link.label}
+                        </Link>
+                      </SheetClose>
+                    );
+                  })}
                 </div>
 
                 {/* CTA Buttons */}

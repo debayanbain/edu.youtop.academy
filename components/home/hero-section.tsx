@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useSyncExternalStore } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import {
   LuArrowRight,
@@ -11,15 +11,10 @@ import {
 } from 'react-icons/lu';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "../ui/button";
+import Image from "next/image";
+import Pencile from '@/public/images/pencile.jpg'
 
-const emptySubscribe = () => () => { };
-function useCanHover() {
-  return useSyncExternalStore(
-    emptySubscribe,
-    () => window.matchMedia("(hover: hover)").matches,
-    () => true
-  );
-}
+
 
 function ProgressCounter({ isActive }: { isActive: boolean }) {
   const count = useMotionValue(0);
@@ -41,16 +36,13 @@ function ProgressCounter({ isActive }: { isActive: boolean }) {
 }
 
 const HeroSection = () => {
-  const [isHovered, setIsHovered] = useState(false);
-  const canHover = useCanHover();
+  const [progressActive, setProgressActive] = useState(false);
 
-  // On touch devices, auto-animate after a short delay
+  // Auto-animate progress bar on page load
   useEffect(() => {
-    if (!canHover) {
-      const timer = setTimeout(() => setIsHovered(true), 500);
-      return () => clearTimeout(timer);
-    }
-  }, [canHover]);
+    const timer = setTimeout(() => setProgressActive(true), 600);
+    return () => clearTimeout(timer);
+  }, []);
   return (
     <section className="relative pt-6 sm:pt-10 pb-8 sm:pb-12 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -116,15 +108,14 @@ const HeroSection = () => {
           </div>
 
           {/* Right — Hero Image with floating badges */}
-          <div className="relative z-10 mx-4 sm:mx-0">
+          <div className="relative z-10 mx-4 sm:mx-0 mt-8 sm:mt-9">
             <motion.div
               className="relative cursor-pointer"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
               whileHover="hover"
-              onHoverStart={() => setIsHovered(true)}
-              onHoverEnd={() => setIsHovered(false)}
+
             >
               {/* Decorative background */}
               <motion.div
@@ -188,11 +179,11 @@ const HeroSection = () => {
                         fill="none"
                         strokeLinecap="round"
                         style={{ strokeDasharray: "125.6" }}
-                        animate={{ strokeDashoffset: isHovered ? 12.56 : 125.6 }}
+                        animate={{ strokeDashoffset: progressActive ? 12.56 : 125.6 }}
                         transition={{ duration: 1.2, ease: "easeOut" }}
                       />
                     </svg>
-                    <ProgressCounter isActive={isHovered} />
+                    <ProgressCounter isActive={progressActive} />
                   </div>
                   <div>
                     <p className="text-[10px] text-gray-500 uppercase font-medium">Success Rate</p>
