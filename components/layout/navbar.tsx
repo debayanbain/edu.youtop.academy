@@ -17,8 +17,7 @@ import {
 const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "E-Books", href: "/ebooks" },
-  { label: "Madhyamik", href: "/madhyamik" },
-  { label: "HS", href: "/hs" },
+  { label: "Notes", href: "/notes" },
   { label: "Results", href: "/results" },
   { label: "Scholarships", href: "/scholarships/svmcm" },
   { label: "News", href: "/news" },
