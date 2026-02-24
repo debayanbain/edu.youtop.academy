@@ -19,7 +19,7 @@ const NAV_LINKS = [
   { label: "E-Books", href: "/ebooks" },
   { label: "Notes", href: "/notes" },
   { label: "Results", href: "/results" },
-  { label: "Scholarships", href: "/scholarships/svmcm" },
+  { label: "Scholarships", href: "/scholarships" },
   { label: "News", href: "/news" },
 ];
 
