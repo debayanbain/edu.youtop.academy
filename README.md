@@ -1,5 +1,9 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+# Kill any process running on port 3000 or 3001
+lsof -t -i:3000 -i:3001 | xargs kill -9 && rm -rf .next/dev/lock
+
+
 ## Getting Started
 
 First, run the development server:

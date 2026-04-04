@@ -1,5 +1,8 @@
-import React from "react";
-import { notFound } from "next/navigation";
+"use client";
+
+import React, { use } from "react";
+import { notFound, useRouter } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 import { notesStore } from "@/lib/data/notes";
 import Link from "next/link";
 import {
@@ -10,18 +13,38 @@ import {
   LuFileText,
 } from "react-icons/lu";
 import Image from "next/image";
+import { useRazorpay } from "@/hooks/useRazorpay";
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-const NoteDetailsPage = async ({ params }: PageProps) => {
-  const param = await params;
+const NoteDetailsPage = ({ params }: PageProps) => {
+  const { userId } = useAuth();
+  const router = useRouter();
+  const { openCheckout } = useRazorpay();
+  const param = use(params);
   const note = notesStore.find((n) => n.id === param.id);
 
   if (!note) {
     notFound();
   }
+
+  const handleCheckout = () => {
+    if (!userId) {
+      router.push("/sign-up");
+      return;
+    }
+
+    openCheckout({
+      amount: note.price,
+      productType: "note",
+      productId: note.id,
+      onSuccess: () => {
+        router.push("/dashboard");
+      },
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground py-8 md:py-12 px-4 sm:px-6 lg:px-8">
@@ -119,7 +142,10 @@ const NoteDetailsPage = async ({ params }: PageProps) => {
               </div>
 
               <div className="flex flex-col gap-3">
-                <button className="btn-brutal btn-brutal-purple btn-brutal-lg w-full text-base md:text-lg shadow-[4px_4px_0_0_#000] md:shadow-[6px_6px_0_0_#000]">
+                <button 
+                  onClick={handleCheckout}
+                  className="btn-brutal btn-brutal-purple btn-brutal-lg w-full text-base md:text-lg shadow-[4px_4px_0_0_#000] md:shadow-[6px_6px_0_0_#000]"
+                >
                   এখনই কিনুন — Checkout
                 </button>
                 <p className="text-center text-[10px] md:text-xs font-bold text-muted-foreground mt-1 md:mt-2">

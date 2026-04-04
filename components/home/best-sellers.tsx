@@ -1,10 +1,41 @@
+"use client";
+
 import React from "react";
 import { BookOpen, Briefcase, ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { MOCK_BOOKS } from "@/lib/constants";
 import Image from "next/image";
+import { useAuth } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import { useRazorpay } from "@/hooks/useRazorpay";
+import { Book } from "@/lib/types";
 
 const BestSellers = () => {
+  const { userId } = useAuth();
+  const router = useRouter();
+  const { openCheckout } = useRazorpay();
+
+  const handleBuyNow = (book: Book) => {
+    if (!userId) {
+      router.push("/sign-up");
+      return;
+    }
+
+    openCheckout({
+      amount: book.price,
+      productType: "ebook",
+      productId: book.id.toString(),
+      onSuccess: () => {
+        // Redirect to a success page or refresh
+        router.push("/dashboard");
+      },
+      onError: (err: unknown) => {
+        const message = err instanceof Error ? err.message : "An unknown error occurred";
+        console.error("Payment failed:", message);
+      }
+    });
+  };
+
   return (
     <div className="space-y-8">
       {/* Featured Books */}
@@ -60,7 +91,12 @@ const BestSellers = () => {
                       ₹{book.price}
                     </span>
                   </div>
-                  <button className="btn-brutal btn-brutal-sm">Buy Now</button>
+                  <button 
+                    onClick={() => handleBuyNow(book)}
+                    className="btn-brutal btn-brutal-sm"
+                  >
+                    Buy Now
+                  </button>
                 </div>
               </div>
             </Card>

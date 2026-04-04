@@ -2,6 +2,8 @@
 
 import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import {
   ShoppingCart,
   Search,
@@ -24,6 +26,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MOCK_BOOKS } from "@/lib/constants";
 import { Book } from "@/lib/types";
+import { useRazorpay } from "@/hooks/useRazorpay";
 
 const CLASSES = ["All Classes", "5", "6", "7", "8", "9", "10", "11", "12"];
 const SUBJECTS = [
@@ -51,10 +54,46 @@ const TESTIMONIAL_AVATARS = [
 ];
 
 export default function EBooksPage() {
+  const { userId } = useAuth();
+  const router = useRouter();
   const [selectedClass, setSelectedClass] = useState("All Classes");
   const [selectedSubject, setSelectedSubject] = useState("All Subjects");
   const [searchQuery, setSearchQuery] = useState("");
   const [cart, setCart] = useState<Book[]>([]);
+  const { openCheckout } = useRazorpay();
+
+  const handleDirectBuy = (book: Book) => {
+    if (!userId) {
+      router.push("/sign-up");
+      return;
+    }
+
+    openCheckout({
+      amount: book.price * 1, // Single item
+      productType: "ebook",
+      productId: book.id.toString(),
+      onSuccess: () => {
+        router.push("/dashboard");
+      },
+    });
+  };
+
+  const handleCartCheckout = () => {
+    if (cart.length === 0) return;
+    
+    // For cart, we'll use a virtual ID or just the first item + 'multi'
+    const combinedId = cart.map(b => b.id).join(",");
+    
+    openCheckout({
+      amount: cart.reduce((sum, item) => sum + item.price, 0),
+      productType: "ebook",
+      productId: `cart_${combinedId}`.substring(0, 50), // Limit length
+      onSuccess: () => {
+        setCart([]);
+        router.push("/dashboard");
+      },
+    });
+  };
 
   const filteredBooks = useMemo(() => {
     return MOCK_BOOKS.filter((book) => {
@@ -70,6 +109,10 @@ export default function EBooksPage() {
   }, [selectedClass, selectedSubject, searchQuery]);
 
   const addToCart = (book: Book) => {
+    if (!userId) {
+      router.push("/sign-up");
+      return;
+    }
     setCart((prev) => [...prev, book]);
   };
 
@@ -507,6 +550,7 @@ export default function EBooksPage() {
                         <Button
                           className="w-full text-2xl h-18 font-black shadow-[6px_6px_0_0_#000] uppercase tracking-tighter"
                           variant="purple"
+                          onClick={handleCartCheckout}
                         >
                           Secure Checkout <ArrowRight className="ml-3 size-8" />
                         </Button>
@@ -606,7 +650,7 @@ export default function EBooksPage() {
                             size="sm"
                             variant="dark"
                             className="px-4 shadow-[3px_3px_0_0_#000]"
-                            onClick={() => addToCart(book)}
+                            onClick={() => handleDirectBuy(book)}
                           >
                             BUY NOW
                           </Button>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { LuMenu, LuBookOpen } from 'react-icons/lu';
+import { LuMenu, LuBookOpen } from "react-icons/lu";
 import { Button } from "../ui/button";
 import {
   Sheet,
@@ -13,18 +13,25 @@ import {
   SheetTitle,
   SheetClose,
 } from "../ui/sheet";
+import {
+  useAuth,
+  UserButton,
+  SignInButton,
+  SignUpButton,
+} from "@clerk/nextjs";
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "E-Books", href: "/ebooks" },
   { label: "Notes", href: "/notes" },
-  { label: "Results", href: "/results" },
+  { label: "Job Results", href: "/results" },
   { label: "Scholarships", href: "/scholarships" },
-  { label: "News", href: "/news" },
+  { label: "Job News", href: "/news" },
 ];
 
 const Navbar = () => {
   const pathname = usePathname();
+  const { userId, isLoaded } = useAuth();
 
   return (
     <nav
@@ -54,8 +61,9 @@ const Navbar = () => {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`px-3 py-2 text-sm font-bold rounded-md transition-colors relative group ${isActive ? "text-brutal-dark" : "hover:bg-brutal-yellow/30"
-                    }`}
+                  className={`px-3 py-2 text-sm font-bold rounded-md transition-colors relative group ${
+                    isActive ? "text-brutal-dark" : "hover:bg-brutal-yellow/30"
+                  }`}
                 >
                   {link.label}
                   {isActive && (
@@ -70,19 +78,48 @@ const Navbar = () => {
             })}
           </div>
 
-          {/* Desktop CTA — hidden on mobile */}
-          <div className="hidden md:flex items-center gap-3">
-            <Button variant="purple" size="sm">
-              Get Pro
-            </Button>
-            <Button variant="purple" size="sm">
-              Join on Call
-            </Button>
+          {/* Desktop Auth Buttons */}
+          <div className="hidden lg:flex items-center gap-4">
+            {!isLoaded ? (
+              <div className="w-20 h-10 animate-pulse bg-gray-200 rounded-md" />
+            ) : !userId ? (
+              <>
+                <SignInButton mode="redirect">
+                  <Button variant="outline" className="font-bold border-2">
+                    Sign In
+                  </Button>
+                </SignInButton>
+                <SignUpButton mode="redirect">
+                  <Button variant="purple" className="shadow-[3px_3px_0_0_#222222]">
+                    Get Started
+                  </Button>
+                </SignUpButton>
+              </>
+            ) : (
+              <div className="flex items-center justify-between border-2 border-border bg-white rounded-lg shadow-[3px_3px_0_0_#222222] py-1 pl-3 pr-1 hover:-translate-y-0.5 transition-transform hover:shadow-[4px_4px_0_0_#222222]">
+                <Link
+                  href="/dashboard"
+                  className="text-sm font-bold truncate hover:text-brutal-purple transition-colors mr-2.5"
+                >
+                  Dashboard
+                </Link>
+                <div className="bg-brutal-yellow rounded-full p-0.75 border-2 border-border shrink-0 flex items-center justify-center">
+                  <UserButton
+                    appearance={{
+                      elements: {
+                        avatarBox: "w-6 h-6 rounded-full object-cover",
+                        userButtonPopoverCard: "border-2 border-border shadow-[6px_6px_0_0_#222222] rounded-xl",
+                      },
+                    }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Mobile Menu — Sheet drawer */}
           <div className="lg:hidden">
-            <Sheet>
+            <Sheet modal={false}>
               <SheetTrigger asChild>
                 <button
                   className="w-10 h-10 border-2 border-border rounded-lg flex items-center justify-center hover:bg-brutal-yellow/20 transition-colors"
@@ -115,10 +152,11 @@ const Navbar = () => {
                       <SheetClose key={link.href} asChild>
                         <Link
                           href={link.href}
-                          className={`block px-3 py-3 text-sm font-bold rounded-md transition-all border-2 ${isActive
-                            ? "bg-brutal-yellow text-brutal-dark border-border shadow-[2px_2px_0_0_#000]"
-                            : "hover:bg-brutal-yellow/20 border-transparent"
-                            }`}
+                          className={`block px-3 py-3 text-sm font-bold rounded-md transition-all border-2 ${
+                            isActive
+                              ? "bg-brutal-yellow text-brutal-dark border-border shadow-[2px_2px_0_0_#000]"
+                              : "hover:bg-brutal-yellow/20 border-transparent"
+                          }`}
                         >
                           {link.label}
                         </Link>
@@ -127,18 +165,56 @@ const Navbar = () => {
                   })}
                 </div>
 
-                {/* CTA Buttons */}
+                {/* Mobile Auth Buttons */}
                 <div className="mt-auto border-t-3 border-border px-4 py-4 flex flex-col gap-3">
-                  <SheetClose asChild>
-                    <Button variant="purple" className="w-full">
-                      Get Pro
-                    </Button>
-                  </SheetClose>
-                  <SheetClose asChild>
-                    <Button variant="purple" className="w-full">
-                      Join on Call
-                    </Button>
-                  </SheetClose>
+                  {!isLoaded ? (
+                    <div className="w-full h-10 animate-pulse bg-gray-200 rounded-md" />
+                  ) : !userId ? (
+                    <>
+                      <SheetClose asChild>
+                        <SignInButton mode="redirect">
+                          <Button
+                            variant="outline"
+                            className="w-full border-2 border-border font-bold shadow-[3px_3px_0_0_#222222]"
+                          >
+                            Sign In
+                          </Button>
+                        </SignInButton>
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <SignUpButton mode="redirect">
+                          <Button variant="purple" className="w-full">
+                            Get Started Free
+                          </Button>
+                        </SignUpButton>
+                      </SheetClose>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between p-2 pl-4 pr-2 border-2 border-border bg-white rounded-xl shadow-[4px_4px_0_0_#222222] mb-3">
+                        <span className="text-sm font-bold text-foreground truncate">
+                          Dashboard
+                        </span>
+                        <div className="bg-brutal-yellow rounded-full p-1 border-2 border-border shrink-0 flex items-center justify-center">
+                          <UserButton
+                            appearance={{
+                              elements: {
+                                avatarBox: "w-8 h-8 rounded-full object-cover",
+                                userButtonPopoverCard: "border-2 border-border shadow-[6px_6px_0_0_#222222] rounded-xl",
+                              },
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <SheetClose asChild>
+                        <Link href="/dashboard" className="w-full">
+                          <Button variant="purple" className="w-full font-bold border-2 border-border shadow-[4px_4px_0_0_#222222] h-11 text-base">
+                            Go to Dashboard
+                          </Button>
+                        </Link>
+                      </SheetClose>
+                    </>
+                  )}
                 </div>
               </SheetContent>
             </Sheet>
