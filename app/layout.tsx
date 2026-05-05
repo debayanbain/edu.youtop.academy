@@ -3,7 +3,10 @@ import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import Navbar from "@/components/layout/navbar";
 import Footer from "@/components/layout/footer";
-import { syncUserToDB } from "@/lib/actions/sync-user";
+import { QueryProvider } from "@/providers/query-provider";
+import { SyncUserProvider } from "@/components/providers/sync-user-provider";
+import { BackendErrorScreen } from "@/components/backend-error-screen";
+import { ProfileWarning } from "@/components/auth/profile-warning";
 
 export const metadata: Metadata = {
   title: "YouTOP Academy — Learn, Prepare, Succeed",
@@ -47,10 +50,6 @@ export default async function RootLayout({
     );
   }
 
-  // Sync the currently logged-in Clerk user to Neon DB on every request.
-  // Uses upsert so it's safe to call repeatedly — no duplicates.
-  await syncUserToDB();
-
   return (
     <ClerkProvider
       appearance={{
@@ -71,13 +70,24 @@ export default async function RootLayout({
         },
       }}
     >
-      <html lang="en" suppressHydrationWarning>
-        <body className="min-h-screen flex flex-col selection:bg-nb-lime selection:text-black">
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <Footer />
-        </body>
-      </html>
+      <QueryProvider>
+        <html lang="en" suppressHydrationWarning>
+          <body className="min-h-screen flex flex-col selection:bg-nb-lime selection:text-black">
+            {/* Strict Backend Check: Blocks UI if connection fails */}
+            <BackendErrorScreen />
+            
+            {/* Syncs the Clerk user to the NestJS backend and Zustand store */}
+            <SyncUserProvider />
+            <Navbar />
+            
+            {/* Global Warning for incomplete profiles */}
+            <ProfileWarning />
+
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </body>
+        </html>
+      </QueryProvider>
     </ClerkProvider>
   );
 }

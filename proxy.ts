@@ -9,17 +9,19 @@ const isProtectedRoute = createRouteMatcher([
 
 import { NextResponse } from "next/server";
 
-const hasValidKey =
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY &&
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY !== "pk_test_Y2xlcmsuYXV0aC5kZXYk";
+export default clerkMiddleware(async (auth, req) => {
+  const hasValidKey =
+    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY &&
+    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY !== "pk_test_Y2xlcmsuYXV0aC5kZXYk";
 
-export default hasValidKey
-  ? clerkMiddleware(async (auth, req) => {
-      if (isProtectedRoute(req)) {
-        await auth.protect();
-      }
-    })
-  : () => NextResponse.next();
+  if (!hasValidKey) {
+    return NextResponse.next();
+  }
+
+  if (isProtectedRoute(req)) {
+    await auth.protect();
+  }
+});
 
 export const config = {
   matcher: [
