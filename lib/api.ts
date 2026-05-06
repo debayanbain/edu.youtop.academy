@@ -3,6 +3,8 @@
  * Pass the Clerk session token (from useAuth().getToken()) to each call.
  */
 
+import { Order } from './types';
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
@@ -49,5 +51,9 @@ export const apiClient = {
     }
 
     return res.json() as Promise<T>;
+  },
+
+  async getPurchases(token: string) {
+    return this.post<Order[]>('/razorpay/my-purchases', {}, token);
   },
 };

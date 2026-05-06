@@ -27,6 +27,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MOCK_BOOKS } from "@/lib/constants";
 import { Book } from "@/lib/types";
 import { useRazorpay } from "@/hooks/useRazorpay";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api";
 
 const CLASSES = ["All Classes", "5", "6", "7", "8", "9", "10", "11", "12"];
 const SUBJECTS = [
@@ -54,13 +56,27 @@ const TESTIMONIAL_AVATARS = [
 ];
 
 export default function EBooksPage() {
-  const { userId } = useAuth();
+  const { userId, getToken } = useAuth();
   const router = useRouter();
   const [selectedClass, setSelectedClass] = useState("All Classes");
   const [selectedSubject, setSelectedSubject] = useState("All Subjects");
   const [searchQuery, setSearchQuery] = useState("");
   const [cart, setCart] = useState<Book[]>([]);
   const { openCheckout } = useRazorpay();
+
+  // 1. Fetch Aggregated E-books from NestJS
+  const { data: serverBooks } = useQuery({
+    queryKey: ["ebooks", userId],
+    queryFn: async () => {
+      const token = await getToken();
+      return apiClient.get<Book[]>("/ebooks", token ?? undefined);
+    },
+  });
+
+  const allBooks = useMemo(() => {
+    // If server has data, use it; otherwise fall back to MOCK_BOOKS
+    return (serverBooks && serverBooks.length > 0) ? serverBooks : MOCK_BOOKS;
+  }, [serverBooks]);
 
   const handleDirectBuy = (book: Book) => {
     if (!userId) {
@@ -96,7 +112,7 @@ export default function EBooksPage() {
   };
 
   const filteredBooks = useMemo(() => {
-    return MOCK_BOOKS.filter((book) => {
+    return allBooks.filter((book) => {
       const matchClass =
         selectedClass === "All Classes" || book.class === selectedClass;
       const matchSubject =
@@ -106,7 +122,7 @@ export default function EBooksPage() {
         book.description?.toLowerCase().includes(searchQuery.toLowerCase());
       return matchClass && matchSubject && matchSearch;
     });
-  }, [selectedClass, selectedSubject, searchQuery]);
+  }, [allBooks, selectedClass, selectedSubject, searchQuery]);
 
   const addToCart = (book: Book) => {
     if (!userId) {
@@ -591,15 +607,17 @@ export default function EBooksPage() {
                           >
                             {book.tag}
                           </Badge>
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              addToCart(book);
-                            }}
-                            className="bg-white border-2 border-border p-2 rounded-lg shadow-[3px_3px_0_0_#000] hover:bg-brutal-yellow transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
-                          >
-                            <ShoppingCart className="size-5" />
-                          </button>
+                          {!book.isOwned && (
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                addToCart(book);
+                              }}
+                              className="bg-white border-2 border-border p-2 rounded-lg shadow-[3px_3px_0_0_#000] hover:bg-brutal-yellow transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+                            >
+                              <ShoppingCart className="size-5" />
+                            </button>
+                          )}
                         </div>
 
                         <div className="relative z-10">
@@ -648,11 +666,11 @@ export default function EBooksPage() {
                           </div>
                           <Button
                             size="sm"
-                            variant="dark"
+                            variant={book.isOwned ? "purple" : "dark"}
                             className="px-4 shadow-[3px_3px_0_0_#000]"
-                            onClick={() => handleDirectBuy(book)}
+                            onClick={() => book.isOwned ? router.push(`/ebooks/${book.id}`) : handleDirectBuy(book)}
                           >
-                            BUY NOW
+                            {book.isOwned ? "READ NOW" : "BUY NOW"}
                           </Button>
                         </div>
                       </div>

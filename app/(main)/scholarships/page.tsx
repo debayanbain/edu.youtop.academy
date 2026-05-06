@@ -14,8 +14,27 @@ import {
 } from "@/components/ui/sheet";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@clerk/nextjs";
+import { apiClient } from "@/lib/api";
+
+interface Scholarship {
+    id: string;
+    title: string;
+    provider: string;
+    description: string;
+    status: string;
+    type: string;
+    state?: string;
+    deadline: string;
+    logo: string;
+    slug: string;
+    featured?: boolean;
+    isOwned?: boolean;
+}
 
 const ScholarshipsPage = () => {
+    const { userId, getToken } = useAuth();
     const [activeTab, setActiveTab] = useState<"Live" | "Upcoming" | "Always Open">("Live");
     const [searchQuery, setSearchQuery] = useState("");
     const [filters, setFilters] = useState({
@@ -23,6 +42,17 @@ const ScholarshipsPage = () => {
         states: [] as string[],
         classes: [] as string[],
     });
+
+    // 1. Fetch Aggregated Scholarships from NestJS
+    const { data: serverScholarships } = useQuery({
+        queryKey: ["scholarships", userId],
+        queryFn: async () => {
+            const token = await getToken();
+            return apiClient.get<Scholarship[]>("/scholarships", token ?? undefined);
+        },
+    });
+
+    const allScholarships = serverScholarships || scholarships;
 
     const handleFilterChange = (category: "types" | "states" | "classes", item: string) => {
         setFilters(prev => {
@@ -44,7 +74,7 @@ const ScholarshipsPage = () => {
     };
 
     const filteredScholarships = useMemo(() => {
-        return scholarships.filter((s) => {
+        return allScholarships.filter((s) => {
             // Status Tab Filter
             const matchesTab = s.status === activeTab;
 
@@ -64,9 +94,9 @@ const ScholarshipsPage = () => {
 
             return matchesTab && matchesSearch && matchesType && matchesState;
         });
-    }, [activeTab, searchQuery, filters]);
+    }, [activeTab, searchQuery, filters, allScholarships]);
 
-    const liveCount = scholarships.filter(s => s.status === "Live").length;
+    const liveCount = allScholarships.filter(s => s.status === "Live").length;
 
     return (
         <div className="bg-nb-bg min-h-screen">
@@ -172,7 +202,7 @@ const ScholarshipsPage = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {filteredScholarships.map((scholarship) => (
                                 <div key={scholarship.id}>
-                                    <ScholarshipCard scholarship={scholarship} />
+                                    <ScholarshipCard scholarship={scholarship as Scholarship} />
                                 </div>
                             ))}
                         </div>

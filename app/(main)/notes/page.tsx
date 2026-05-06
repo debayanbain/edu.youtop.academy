@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { notesStore, getClasses, getSubjects } from "@/lib/data/notes";
+import { notesStore, getClasses, getSubjects, Note } from "@/lib/data/notes";
 import Link from "next/link";
 import {
     LuFilter,
@@ -14,6 +14,9 @@ import {
     LuZap,
     LuShieldCheck,
 } from "react-icons/lu";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@clerk/nextjs";
+import { apiClient } from "@/lib/api";
 import Image from "next/image";
 import {
     Sheet,
@@ -173,10 +176,20 @@ const FEATURES = [
 ];
 
 const NotesPage = () => {
+    const { userId, getToken } = useAuth();
     const [selectedClass, setSelectedClass] = useState<string | null>(null);
     const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [featureIndex, setFeatureIndex] = useState(0);
+
+    // 1. Fetch Aggregated Notes from NestJS
+    const { data: serverNotes } = useQuery({
+        queryKey: ["notes", userId],
+        queryFn: async () => {
+            const token = await getToken();
+            return apiClient.get<Note[]>("/notes", token ?? undefined);
+        },
+    });
 
     const classes = getClasses();
     const subjects = getSubjects();
@@ -188,7 +201,7 @@ const NotesPage = () => {
         return () => clearInterval(timer);
     }, []);
 
-    const filteredNotes = notesStore.filter((note) => {
+    const filteredNotes = (serverNotes || notesStore).filter((note) => {
         const classMatch = selectedClass ? note.class === selectedClass : true;
         const subjectMatch = selectedSubject
             ? note.subject === selectedSubject
