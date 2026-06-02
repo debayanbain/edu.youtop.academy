@@ -26,7 +26,7 @@ export default async function RootLayout({
   if (!hasValidKey) {
     return (
       <html lang="en" suppressHydrationWarning>
-        <body className="min-h-screen flex items-center justify-center bg-brutal-yellow p-4">
+        <body className="min-h-screen flex items-center justify-center bg-brutal-yellow p-4" suppressHydrationWarning>
           <div
             className="bg-card border-4 border-brutal-black rounded-2xl p-8 max-w-xl text-center space-y-6"
             style={{ boxShadow: "8px 8px 0px 0px var(--brutal-black)" }}
@@ -72,7 +72,7 @@ export default async function RootLayout({
     >
       <QueryProvider>
         <html lang="en" suppressHydrationWarning>
-          <body className="min-h-screen flex flex-col selection:bg-nb-lime selection:text-black">
+          <body className="min-h-screen flex flex-col selection:bg-nb-lime selection:text-black" suppressHydrationWarning>
             {/* Strict Backend Check: Blocks UI if connection fails */}
             <BackendErrorScreen />
             

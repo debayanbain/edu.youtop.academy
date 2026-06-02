@@ -11,32 +11,43 @@ import {
 } from 'react-icons/lu';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "../ui/button";
-import Image from "next/image";
-import Pencile from '@/public/images/pencile.jpg'
+import { HeroSectionDto } from "@/lib/homepage-types";
 
-
-
-function ProgressCounter({ isActive }: { isActive: boolean }) {
+interface HeroSectionProps {
+  data?: HeroSectionDto;
+}
+function ProgressCounter({ isActive, value }: { isActive: boolean; value: number }) {
   const count = useMotionValue(0);
-  const rounded = useTransform(count, (v) => `${Math.round(v)}%`);
+  const isLargeNumber = value > 100;
+  
+  const displayVal = useTransform(count, (v) => {
+    if (isLargeNumber) {
+      if (v >= 1000) {
+        return `${(v / 1000).toFixed(0)}k+`;
+      }
+      return `${Math.round(v)}+`;
+    }
+    return `${Math.round(v)}%`;
+  });
 
   useEffect(() => {
     if (isActive) {
-      animate(count, 90, { duration: 1.2, ease: "easeOut" });
+      animate(count, value, { duration: 1.2, ease: "easeOut" });
     } else {
       animate(count, 0, { duration: 0.4, ease: "easeIn" });
     }
-  }, [isActive, count]);
+  }, [isActive, count, value]);
 
   return (
-    <motion.span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-green-600">
-      {rounded}
+    <motion.span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-green-600">
+      {displayVal}
     </motion.span>
   );
 }
 
-const HeroSection = () => {
+const HeroSection = ({ data }: HeroSectionProps) => {
   const [progressActive, setProgressActive] = useState(false);
+  const successRateValue = data?.success_rate ? Number(data.success_rate) : 90;
 
   // Auto-animate progress bar on page load
   useEffect(() => {
@@ -52,13 +63,13 @@ const HeroSection = () => {
             <div className="relative w-full">
               {/* Badge: floating tag on mobile, normal flow on lg */}
               <Badge variant="yellow" className="absolute -top-3 right-0 text-[8px] px-1.5 py-0.5 lg:static lg:mb-4 lg:text-xs lg:px-3 lg:py-1 z-10">
-                #1 Learning Platform in WB
+                {data?.badge_text || "#1 Learning Platform in WB"}
               </Badge>
               <h1 className="font-bold text-5xl sm:text-5xl lg:text-7xl leading-tight mb-4 sm:mb-6">
-                Master Your <br />
+                {data?.heading || "Master Your Exams"} <br />
                 <span className="relative inline-block">
                   <span className="px-2 box-decoration-slice z-10">
-                    Exams Today.
+                    {data?.highlighted_text || "Today."}
                   </span>
                   {/* Animated SVG underline swoosh */}
                   <motion.svg
@@ -94,16 +105,19 @@ const HeroSection = () => {
               </h1>
             </div>
             <p className="text-base sm:text-xl text-muted-foreground mb-6 sm:mb-8 border-l-4 border-border pl-4 text-left">
-              Get high-quality suggestions, notes, and e-books for Madhyamik,
-              HS, and Competitive Exams.
+              {data?.subheading || "Get high-quality suggestions, notes, and e-books for Madhyamik, HS, and Competitive Exams."}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto lg:justify-start">
-              <Button className="btn-brutal sm:h-12 sm:px-6 sm:text-base" size="sm">
-                Explore Courses <LuArrowRight size="18" />
-              </Button>
-              <Button className="bg-white sm:h-12 sm:px-6 sm:text-base" size="sm">
-                Download App <LuDownload size="18" />
-              </Button>
+              <a href={data?.primary_button_link || "/courses"} className="w-full sm:w-auto flex">
+                <Button className="w-full btn-brutal sm:h-12 sm:px-6 sm:text-base" size="sm">
+                  {data?.primary_button_text || "Explore Courses"} <LuArrowRight size="18" />
+                </Button>
+              </a>
+              <a href={data?.secondary_button_link || "/app"} className="w-full sm:w-auto flex">
+                <Button className="w-full bg-white sm:h-12 sm:px-6 sm:text-base" size="sm">
+                  {data?.secondary_button_text || "Download App"} <LuDownload size="18" />
+                </Button>
+              </a>
             </div>
           </div>
 
@@ -179,11 +193,15 @@ const HeroSection = () => {
                         fill="none"
                         strokeLinecap="round"
                         style={{ strokeDasharray: "125.6" }}
-                        animate={{ strokeDashoffset: progressActive ? 12.56 : 125.6 }}
+                        animate={{
+                          strokeDashoffset: progressActive
+                            ? (successRateValue > 100 ? 0 : 125.6 * (1 - successRateValue / 100))
+                            : 125.6
+                        }}
                         transition={{ duration: 1.2, ease: "easeOut" }}
                       />
                     </svg>
-                    <ProgressCounter isActive={progressActive} />
+                    <ProgressCounter isActive={progressActive} value={successRateValue} />
                   </div>
                   <div>
                     <p className="text-[10px] text-gray-500 uppercase font-medium">Success Rate</p>
@@ -226,7 +244,7 @@ const HeroSection = () => {
                   </motion.div>
                   <div>
                     <p className="text-xs text-gray-500">Active Learners</p>
-                    <p className="text-lg font-bold text-gray-800">50,000+</p>
+                    <p className="text-lg font-bold text-gray-800">{data?.active_learners ? `${(Number(data.active_learners) / 1000).toFixed(0)}k+` : "50,000+"}</p>
                   </div>
                 </div>
               </motion.div>
@@ -268,7 +286,7 @@ const HeroSection = () => {
                   </motion.div>
                   <div>
                     <p className="text-[10px] opacity-80">Daily Lessons</p>
-                    <p className="text-sm font-bold">25+ Live</p>
+                    <p className="text-sm font-bold">{data?.daily_lessons ? `${data.daily_lessons}+ Live` : "25+ Live"}</p>
                   </div>
                 </div>
               </motion.div>
