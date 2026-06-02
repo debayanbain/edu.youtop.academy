@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from "react";
 import ScholarshipCard from "@/components/scholarships/scholarship-card";
 import { FilterSidebar } from "@/components/scholarships/filter-sidebar";
-import { scholarships } from "@/data/scholarships-data";
+import { scholarships, Scholarship as BaseScholarship } from "@/data/scholarships-data";
 import { Search, SlidersHorizontal, Info, ChevronRight } from "lucide-react";
 import {
     Sheet,
@@ -18,18 +18,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { apiClient } from "@/lib/api";
 
-interface Scholarship {
-    id: string;
-    title: string;
-    provider: string;
-    description: string;
-    status: string;
-    type: string;
-    state?: string;
-    deadline: string;
-    logo: string;
-    slug: string;
-    featured?: boolean;
+interface Scholarship extends BaseScholarship {
     isOwned?: boolean;
 }
 
