@@ -6,6 +6,7 @@ import FeaturesGrid from "@/components/home/features-grid";
 import LatestUpdates from "@/components/home/latest-updates";
 import BestSellers from "@/components/home/best-sellers";
 import CtaSection from "@/components/home/cta-section";
+import { Loader } from "@/components/ui/loader";
 import { HomepageResponseDto, HeroSectionDto, LatestUpdatesSectionDto, BestSellersSectionDto, CtaBannerSectionDto, JobHighlightsSectionDto } from "@/lib/homepage-types";
 
 const fetchHomepageData = async () => {
@@ -30,7 +31,7 @@ export default function HomePage() {
   const ctaData = sections.find(s => s.__component === 'sections.cta-banner') as CtaBannerSectionDto | undefined;
 
   if (isLoading) {
-    return <div className="flex h-screen items-center justify-center">Loading...</div>;
+    return <Loader layout="fullscreen" text="Preparing your academy..." />;
   }
 
   if (error) {
