@@ -9,8 +9,10 @@ import CtaSection from "@/components/home/cta-section";
 import { Loader } from "@/components/ui/loader";
 import { HomepageResponseDto, HeroSectionDto, LatestUpdatesSectionDto, BestSellersSectionDto, CtaBannerSectionDto, JobHighlightsSectionDto } from "@/lib/homepage-types";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+
 const fetchHomepageData = async () => {
-  const res = await fetch('http://localhost:3001/api/v1/homepage');
+  const res = await fetch(`${API_BASE_URL}/api/v1/homepage`);
   if (!res.ok) throw new Error('Failed to fetch homepage data');
   const json = await res.json();
   return json.data as HomepageResponseDto;

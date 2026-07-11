@@ -24,21 +24,11 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MOCK_BOOKS } from "@/lib/constants";
 import { Book } from "@/lib/types";
 import { useRazorpay } from "@/hooks/useRazorpay";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
-
-const CLASSES = ["All Classes", "5", "6", "7", "8", "9", "10", "11", "12"];
-const SUBJECTS = [
-  "All Subjects",
-  "History",
-  "Physics",
-  "Mathematics",
-  "Science",
-  "Bengali",
-];
+import { toBooks } from "@/lib/product-adapter";
 
 const TESTIMONIAL_AVATARS = [
   {
@@ -65,18 +55,42 @@ export default function EBooksPage() {
   const { openCheckout } = useRazorpay();
 
   // 1. Fetch Aggregated E-books from NestJS
-  const { data: serverBooks } = useQuery({
+  const {
+    data: serverBooks,
+    isPending,
+    isError,
+  } = useQuery({
     queryKey: ["ebooks", userId],
     queryFn: async () => {
       const token = await getToken();
-      return apiClient.get<Book[]>("/ebooks", token ?? undefined);
+      const data = await apiClient.get<unknown>("/ebooks", token ?? undefined);
+      return toBooks(data);
     },
   });
 
-  const allBooks = useMemo(() => {
-    // If server has data, use it; otherwise fall back to MOCK_BOOKS
-    return (serverBooks && serverBooks.length > 0) ? serverBooks : MOCK_BOOKS;
-  }, [serverBooks]);
+  // Live data only — no mock fallback (it caused a fake-books flash on load
+  // and masked genuine empty/error states). Loading is handled with skeletons.
+  const allBooks = useMemo(() => serverBooks ?? [], [serverBooks]);
+
+  // Filter options derived from live data so buttons always match what's shown.
+  const classes = useMemo(
+    () => [
+      "All Classes",
+      ...Array.from(
+        new Set(allBooks.map((b) => b.class).filter(Boolean)),
+      ).sort((a, b) => parseInt(a) - parseInt(b)),
+    ],
+    [allBooks],
+  );
+  const subjects = useMemo(
+    () => [
+      "All Subjects",
+      ...Array.from(
+        new Set(allBooks.map((b) => b.subject).filter(Boolean)),
+      ).sort(),
+    ],
+    [allBooks],
+  );
 
   const handleDirectBuy = (book: Book) => {
     if (!userId) {
@@ -294,7 +308,7 @@ export default function EBooksPage() {
                   <GraduationCap className="size-4" /> Classes
                 </h3>
                 <div className="grid grid-cols-2 gap-2">
-                  {CLASSES.map((cls) => (
+                  {classes.map((cls) => (
                     <button
                       key={cls}
                       onClick={() => setSelectedClass(cls)}
@@ -315,7 +329,7 @@ export default function EBooksPage() {
                   <BookOpen className="size-4" /> Subjects
                 </h3>
                 <div className="flex flex-col gap-1.5">
-                  {SUBJECTS.map((sub) => (
+                  {subjects.map((sub) => (
                     <button
                       key={sub}
                       onClick={() => setSelectedSubject(sub)}
@@ -379,7 +393,7 @@ export default function EBooksPage() {
                         Select Class
                       </h4>
                       <div className="grid grid-cols-2 gap-2">
-                        {CLASSES.map((cls) => (
+                        {classes.map((cls) => (
                           <button
                             key={cls}
                             onClick={() => setSelectedClass(cls)}
@@ -401,7 +415,7 @@ export default function EBooksPage() {
                         Subject
                       </h4>
                       <div className="space-y-2">
-                        {SUBJECTS.map((sub) => (
+                        {subjects.map((sub) => (
                           <button
                             key={sub}
                             onClick={() => setSelectedSubject(sub)}
@@ -584,7 +598,28 @@ export default function EBooksPage() {
           {/* Book Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             <AnimatePresence mode="popLayout">
-              {filteredBooks.length > 0 ? (
+              {isPending ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <div
+                    key={`sk-${i}`}
+                    className="h-full flex flex-col bg-white border-3 border-border rounded-xl overflow-hidden shadow-[6px_6px_0_0_#000] animate-pulse"
+                  >
+                    <div className="aspect-4/5 bg-muted" />
+                    <div className="p-5 flex flex-col gap-3 border-t-3 border-border">
+                      <div className="h-4 w-1/2 bg-muted rounded" />
+                      <div className="h-6 w-3/4 bg-muted rounded" />
+                      <div className="mt-2 h-9 w-full bg-muted rounded" />
+                    </div>
+                  </div>
+                ))
+              ) : isError ? (
+                <div className="col-span-full text-center py-12 space-y-2">
+                  <h3 className="text-2xl font-black">Couldn&apos;t load e-books</h3>
+                  <p className="text-muted-foreground font-medium">
+                    Please check your connection and try again.
+                  </p>
+                </div>
+              ) : filteredBooks.length > 0 ? (
                 filteredBooks.map((book) => (
                   <motion.div
                     key={book.id}

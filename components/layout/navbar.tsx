@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { LuMenu, LuBookOpen } from "react-icons/lu";
+import { useGlobalSettings } from "@/hooks/useGlobalSettings";
 import { Button } from "../ui/button";
 import {
   Sheet,
@@ -32,6 +34,8 @@ const NAV_LINKS = [
 const Navbar = () => {
   const pathname = usePathname();
   const { userId, isLoaded } = useAuth();
+  const { logo, siteName, headerLinks } = useGlobalSettings();
+  const navLinks = headerLinks.length > 0 ? headerLinks : NAV_LINKS;
 
   return (
     <nav
@@ -42,20 +46,41 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group shrink-0">
-            <div
-              className="w-10 h-10 bg-brutal-yellow rounded-lg border-2 border-border flex items-center justify-center group-hover:-translate-y-0.5 transition-transform"
-              style={{ boxShadow: "3px 3px 0px 0px var(--brutal-black)" }}
-            >
-              <LuBookOpen size={25} />
-            </div>
-            <span className="text-xl font-black tracking-tight">
-              You<span className="text-brutal-purple">TOP</span>
-            </span>
+            {logo ? (
+              <div
+                className="relative w-10 h-10 rounded-lg border-2 border-border overflow-hidden group-hover:-translate-y-0.5 transition-transform"
+                style={{ boxShadow: "3px 3px 0px 0px var(--brutal-black)" }}
+              >
+                <Image
+                  src={logo}
+                  alt={siteName || "YouTOP"}
+                  fill
+                  className="object-cover"
+                  sizes="40px"
+                />
+              </div>
+            ) : (
+              <div
+                className="w-10 h-10 bg-brutal-yellow rounded-lg border-2 border-border flex items-center justify-center group-hover:-translate-y-0.5 transition-transform"
+                style={{ boxShadow: "3px 3px 0px 0px var(--brutal-black)" }}
+              >
+                <LuBookOpen size={25} />
+              </div>
+            )}
+            {siteName ? (
+              <span className="text-xl font-black tracking-tight">
+                {siteName}
+              </span>
+            ) : (
+              <span className="text-xl font-black tracking-tight">
+                You<span className="text-brutal-purple">TOP</span>
+              </span>
+            )}
           </Link>
 
           {/* Desktop Nav */}
           <div className="hidden lg:flex items-center gap-1">
-            {NAV_LINKS.map((link) => {
+            {navLinks.map((link) => {
               const isActive = pathname === link.href;
               return (
                 <Link
@@ -135,18 +160,36 @@ const Navbar = () => {
               >
                 <SheetHeader className="border-b-3 border-border px-5 py-4">
                   <SheetTitle className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-brutal-yellow rounded-lg border-2 border-border flex items-center justify-center">
-                      <LuBookOpen size={18} />
-                    </div>
-                    <span className="text-lg font-black tracking-tight">
-                      You<span className="text-brutal-purple">TOP</span>
-                    </span>
+                    {logo ? (
+                      <div className="relative w-8 h-8 rounded-lg border-2 border-border overflow-hidden">
+                        <Image
+                          src={logo}
+                          alt={siteName || "YouTOP"}
+                          fill
+                          className="object-cover"
+                          sizes="32px"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-8 h-8 bg-brutal-yellow rounded-lg border-2 border-border flex items-center justify-center">
+                        <LuBookOpen size={18} />
+                      </div>
+                    )}
+                    {siteName ? (
+                      <span className="text-lg font-black tracking-tight">
+                        {siteName}
+                      </span>
+                    ) : (
+                      <span className="text-lg font-black tracking-tight">
+                        You<span className="text-brutal-purple">TOP</span>
+                      </span>
+                    )}
                   </SheetTitle>
                 </SheetHeader>
 
                 {/* Nav Links */}
                 <div className="flex flex-col px-3 py-3 gap-1">
-                  {NAV_LINKS.map((link) => {
+                  {navLinks.map((link) => {
                     const isActive = pathname === link.href;
                     return (
                       <SheetClose key={link.href} asChild>

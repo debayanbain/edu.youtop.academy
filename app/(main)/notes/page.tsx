@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { notesStore, getClasses, getSubjects, Note } from "@/lib/data/notes";
 import Link from "next/link";
 import {
     LuFilter,
@@ -17,6 +16,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { apiClient } from "@/lib/api";
+import { toNotes } from "@/lib/product-adapter";
 import Image from "next/image";
 import {
     Sheet,
@@ -183,16 +183,35 @@ const NotesPage = () => {
     const [featureIndex, setFeatureIndex] = useState(0);
 
     // 1. Fetch Aggregated Notes from NestJS
-    const { data: serverNotes } = useQuery({
+    const {
+        data: serverNotes,
+        isPending,
+        isError,
+    } = useQuery({
         queryKey: ["notes", userId],
         queryFn: async () => {
             const token = await getToken();
-            return apiClient.get<Note[]>("/notes", token ?? undefined);
+            const data = await apiClient.get<unknown>("/notes", token ?? undefined);
+            return toNotes(data);
         },
     });
 
-    const classes = getClasses();
-    const subjects = getSubjects();
+    // Filter options come from the live data, so buttons always match what's
+    // actually shown (no stale/mock-derived options).
+    const classes = useMemo(
+        () =>
+            Array.from(
+                new Set((serverNotes ?? []).map((n) => n.class).filter(Boolean)),
+            ).sort((a, b) => parseInt(b) - parseInt(a)),
+        [serverNotes],
+    );
+    const subjects = useMemo(
+        () =>
+            Array.from(
+                new Set((serverNotes ?? []).map((n) => n.subject).filter(Boolean)),
+            ).sort(),
+        [serverNotes],
+    );
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -201,7 +220,7 @@ const NotesPage = () => {
         return () => clearInterval(timer);
     }, []);
 
-    const filteredNotes = (serverNotes || notesStore).filter((note) => {
+    const filteredNotes = (serverNotes ?? []).filter((note) => {
         const classMatch = selectedClass ? note.class === selectedClass : true;
         const subjectMatch = selectedSubject
             ? note.subject === selectedSubject
@@ -345,14 +364,42 @@ const NotesPage = () => {
 
                     {/* Grid Layout */}
                     <div className="lg:col-span-3">
-                        <div className="hidden lg:flex mb-6 justify-between items-center">
-                            <p className="font-bold text-lg">
-                                {filteredNotes.length} টি নোট দেখা যাচ্ছে (Showing{" "}
-                                {filteredNotes.length} Notes)
-                            </p>
-                        </div>
+                        {!isPending && !isError && (
+                            <div className="hidden lg:flex mb-6 justify-between items-center">
+                                <p className="font-bold text-lg">
+                                    {filteredNotes.length} টি নোট দেখা যাচ্ছে (Showing{" "}
+                                    {filteredNotes.length} Notes)
+                                </p>
+                            </div>
+                        )}
 
-                        {filteredNotes.length === 0 ? (
+                        {isPending ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                                {Array.from({ length: 6 }).map((_, i) => (
+                                    <div
+                                        key={i}
+                                        className="card-brutal h-full flex flex-col bg-card overflow-hidden animate-pulse"
+                                    >
+                                        <div className="aspect-4/3 border-b-3 border-border bg-muted" />
+                                        <div className="p-4 sm:p-5 flex flex-col gap-3">
+                                            <div className="h-5 w-3/4 bg-muted rounded" />
+                                            <div className="h-4 w-full bg-muted rounded" />
+                                            <div className="h-4 w-2/3 bg-muted rounded" />
+                                            <div className="mt-2 h-8 w-1/3 bg-muted rounded" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : isError ? (
+                            <div className="card-brutal p-8 sm:p-12 text-center bg-muted/50 border-dashed">
+                                <p className="text-xl sm:text-2xl font-bold text-muted-foreground mb-2">
+                                    Couldn&apos;t load notes.
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                    Please check your connection and try again.
+                                </p>
+                            </div>
+                        ) : filteredNotes.length === 0 ? (
                             <div className="card-brutal p-8 sm:p-12 text-center bg-muted/50 border-dashed">
                                 <p className="text-xl sm:text-2xl font-bold text-muted-foreground mb-4">
                                     No notes found matching your criteria.

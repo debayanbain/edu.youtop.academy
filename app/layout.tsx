@@ -8,11 +8,36 @@ import { SyncUserProvider } from "@/components/providers/sync-user-provider";
 import { BackendErrorScreen } from "@/components/backend-error-screen";
 import { ProfileWarning } from "@/components/auth/profile-warning";
 
-export const metadata: Metadata = {
+const DEFAULT_METADATA: Metadata = {
   title: "YouTOP Academy — Learn, Prepare, Succeed",
   description:
     "High-quality suggestions, notes, and e-books for Madhyamik, HS, and Competitive Exams in West Bengal.",
 };
+
+// Title + favicon come from Strapi Global Settings (via the NestJS backend).
+// Fetched server-side, revalidated hourly, with a safe fallback if unavailable.
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+    const res = await fetch(`${base}/api/v1/global-settings`, {
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return DEFAULT_METADATA;
+    const json = (await res.json()) as {
+      data?: { siteName?: string; favicon?: string | null };
+    };
+    const s = json.data ?? {};
+    return {
+      title: s.siteName
+        ? `${s.siteName} — Learn, Prepare, Succeed`
+        : DEFAULT_METADATA.title,
+      description: DEFAULT_METADATA.description,
+      icons: s.favicon ? { icon: s.favicon } : undefined,
+    };
+  } catch {
+    return DEFAULT_METADATA;
+  }
+}
 
 export default async function RootLayout({
   children,

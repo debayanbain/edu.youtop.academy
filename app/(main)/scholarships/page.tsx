@@ -3,7 +3,8 @@
 import React, { useState, useMemo } from "react";
 import ScholarshipCard from "@/components/scholarships/scholarship-card";
 import { FilterSidebar } from "@/components/scholarships/filter-sidebar";
-import { scholarships, Scholarship as BaseScholarship } from "@/data/scholarships-data";
+import { Scholarship as BaseScholarship } from "@/data/scholarships-data";
+import { fetchScholarships } from "@/lib/content-adapters";
 import { Search, SlidersHorizontal, Info, ChevronRight } from "lucide-react";
 import {
     Sheet,
@@ -16,7 +17,6 @@ import { Card } from "@/components/ui/card";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
-import { apiClient } from "@/lib/api";
 
 interface Scholarship extends BaseScholarship {
     isOwned?: boolean;
@@ -32,16 +32,19 @@ const ScholarshipsPage = () => {
         classes: [] as string[],
     });
 
-    // 1. Fetch Aggregated Scholarships from NestJS
-    const { data: serverScholarships } = useQuery({
+    // 1. Fetch Scholarships from NestJS (Strapi-backed). Live data only.
+    const { data: serverScholarships, isPending } = useQuery({
         queryKey: ["scholarships", userId],
         queryFn: async () => {
             const token = await getToken();
-            return apiClient.get<Scholarship[]>("/scholarships", token ?? undefined);
+            return fetchScholarships(token ?? undefined);
         },
     });
 
-    const allScholarships = serverScholarships || scholarships;
+    const allScholarships: Scholarship[] = useMemo(
+        () => serverScholarships ?? [],
+        [serverScholarships],
+    );
 
     const handleFilterChange = (category: "types" | "states" | "classes", item: string) => {
         setFilters(prev => {
@@ -86,6 +89,8 @@ const ScholarshipsPage = () => {
     }, [activeTab, searchQuery, filters, allScholarships]);
 
     const liveCount = allScholarships.filter(s => s.status === "Live").length;
+    const upcomingCount = allScholarships.filter(s => s.status === "Upcoming").length;
+    const alwaysOpenCount = allScholarships.filter(s => s.status === "Always Open").length;
 
     return (
         <div className="bg-nb-bg min-h-screen">
@@ -168,7 +173,7 @@ const ScholarshipsPage = () => {
                                     }`}
                             >
                                 Upcoming
-                                <span className="text-lg sm:text-2xl font-black">24</span>
+                                <span className="text-lg sm:text-2xl font-black">{upcomingCount}</span>
                             </button>
 
                             <button
@@ -177,7 +182,7 @@ const ScholarshipsPage = () => {
                                     }`}
                             >
                                 Always Open
-                                <span className="text-lg sm:text-2xl font-black">12</span>
+                                <span className="text-lg sm:text-2xl font-black">{alwaysOpenCount}</span>
                             </button>
                         </div>
 
@@ -188,25 +193,38 @@ const ScholarshipsPage = () => {
                         </div>
 
                         {/* Scholarship Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {filteredScholarships.map((scholarship) => (
-                                <div key={scholarship.id}>
-                                    <ScholarshipCard scholarship={scholarship as Scholarship} />
-                                </div>
-                            ))}
-                        </div>
-
-                        {filteredScholarships.length === 0 && (
-                            <div className="text-center py-20 bg-white border-2 border-brutal-black p-12 shadow-[8px_8px_0_0_#000]">
-                                <h2 className="text-2xl font-black mb-4 uppercase">No matching scholarships!</h2>
-                                <p className="font-bold text-muted-foreground mb-8">Try adjusting your search or filters.</p>
-                                <button
-                                    onClick={handleReset}
-                                    className="btn-brutal"
-                                >
-                                    Clear All
-                                </button>
+                        {isPending ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {Array.from({ length: 4 }).map((_, i) => (
+                                    <div
+                                        key={i}
+                                        className="h-64 border-2 border-brutal-black bg-muted/40 shadow-[4px_4px_0_0_#000] animate-pulse"
+                                    />
+                                ))}
                             </div>
+                        ) : (
+                            <>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {filteredScholarships.map((scholarship) => (
+                                        <div key={scholarship.id}>
+                                            <ScholarshipCard scholarship={scholarship as Scholarship} />
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {filteredScholarships.length === 0 && (
+                                    <div className="text-center py-20 bg-white border-2 border-brutal-black p-12 shadow-[8px_8px_0_0_#000]">
+                                        <h2 className="text-2xl font-black mb-4 uppercase">No matching scholarships!</h2>
+                                        <p className="font-bold text-muted-foreground mb-8">Try adjusting your search or filters.</p>
+                                        <button
+                                            onClick={handleReset}
+                                            className="btn-brutal"
+                                        >
+                                            Clear All
+                                        </button>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </main>
 
@@ -232,7 +250,7 @@ const ScholarshipsPage = () => {
                                 <h3 className="font-black uppercase text-sm">Featured Scholarships</h3>
                             </div>
                             <div className="p-5 space-y-6 bg-white overflow-hidden">
-                                {scholarships.filter(s => s.featured).map(s => (
+                                {allScholarships.filter(s => s.featured).map(s => (
                                     <Link key={s.id} href={`/scholarships/${s.slug}`} className="block group">
                                         <div className="flex items-center gap-4 mb-2">
                                             <div className="w-12 h-12 bg-nb-bg border-2 border-brutal-black p-1 shrink-0">

@@ -5,8 +5,19 @@
 
 import { Order } from './types';
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+// Backend serves everything under the /api/v1 prefix (global prefix + URI versioning).
+const API_BASE_URL = `${
+  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
+}/api/v1`;
+
+// Every success response is wrapped by the backend in { success, data, ... }.
+// Return the inner payload so callers get the array/object they expect.
+function unwrap<T>(json: unknown): T {
+  if (json && typeof json === 'object' && 'data' in json) {
+    return (json as { data: T }).data;
+  }
+  return json as T;
+}
 
 export const apiClient = {
   async get<T>(path: string, token?: string): Promise<T> {
@@ -27,7 +38,7 @@ export const apiClient = {
       );
     }
 
-    return res.json() as Promise<T>;
+    return unwrap<T>(await res.json());
   },
 
   async post<T>(path: string, body: unknown, token?: string): Promise<T> {
@@ -50,7 +61,7 @@ export const apiClient = {
       );
     }
 
-    return res.json() as Promise<T>;
+    return unwrap<T>(await res.json());
   },
 
   async getPurchases(token: string) {

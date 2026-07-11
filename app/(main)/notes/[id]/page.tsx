@@ -1,9 +1,11 @@
 "use client";
 
 import React, { use } from "react";
-import { notFound, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
-import { notesStore } from "@/lib/data/notes";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api";
+import { toNote } from "@/lib/product-adapter";
 import Link from "next/link";
 import {
   LuArrowLeft,
@@ -19,15 +21,100 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+const BackButton = () => (
+  <Link
+    href="/notes"
+    className="inline-flex items-center gap-2 mb-6 md:mb-8 px-3 py-1.5 md:px-4 md:py-2 border-2 border-border rounded-md bg-card font-bold shadow-[2px_2px_0_0_#000] hover:bg-brutal-yellow/20 transition-colors text-sm md:text-base"
+  >
+    <LuArrowLeft className="w-4 h-4" />
+    স্টোরে ফিরে যান (Back)
+  </Link>
+);
+
+const Shell = ({ children }: { children: React.ReactNode }) => (
+  <div className="min-h-screen bg-background text-foreground py-8 md:py-12 px-4 sm:px-6 lg:px-8">
+    <div className="max-w-7xl mx-auto">
+      <BackButton />
+      {children}
+    </div>
+  </div>
+);
+
+const DetailSkeleton = () => (
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-start animate-pulse">
+    <div className="space-y-6 lg:sticky lg:top-24">
+      <div className="card-brutal overflow-hidden border-3 md:border-4">
+        <div className="aspect-4/3 bg-muted" />
+      </div>
+      <div className="grid grid-cols-3 gap-3 md:gap-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="card-brutal p-3 md:p-4 h-24 bg-muted/40" />
+        ))}
+      </div>
+    </div>
+    <div className="space-y-6">
+      <div className="h-4 w-1/3 bg-muted rounded" />
+      <div className="h-10 w-3/4 bg-muted rounded" />
+      <div className="space-y-2">
+        <div className="h-4 w-full bg-muted rounded" />
+        <div className="h-4 w-5/6 bg-muted rounded" />
+      </div>
+      <div className="card-brutal p-6 h-40 bg-muted/40" />
+    </div>
+  </div>
+);
+
+const NotFoundState = () => (
+  <div className="card-brutal p-8 sm:p-12 text-center bg-muted/50 border-dashed max-w-xl mx-auto">
+    <h1 className="text-2xl sm:text-3xl font-black mb-2">Note not found</h1>
+    <p className="text-muted-foreground font-medium mb-6">
+      This note may have been removed or the link is incorrect.
+    </p>
+    <Link href="/notes" className="btn-brutal btn-brutal-purple">
+      Browse all notes
+    </Link>
+  </div>
+);
+
 const NoteDetailsPage = ({ params }: PageProps) => {
-  const { userId } = useAuth();
+  const { userId, getToken } = useAuth();
   const router = useRouter();
   const { openCheckout } = useRazorpay();
-  const param = use(params);
-  const note = notesStore.find((n) => n.id === param.id);
+  const { id } = use(params);
 
-  if (!note) {
-    notFound();
+  const {
+    data: note,
+    isPending,
+    isError,
+  } = useQuery({
+    queryKey: ["note", id, userId],
+    queryFn: async () => {
+      const token = await getToken();
+      const data = await apiClient.get<unknown>(
+        `/notes/${id}`,
+        token ?? undefined,
+      );
+      return toNote(data);
+    },
+    retry: false,
+  });
+
+  if (isPending) {
+    return (
+      <Shell>
+        <DetailSkeleton />
+      </Shell>
+    );
+  }
+
+  // 404 from the backend surfaces as a query error; a null payload means the
+  // row was unusable. Both render the same friendly not-found state.
+  if (isError || !note) {
+    return (
+      <Shell>
+        <NotFoundState />
+      </Shell>
+    );
   }
 
   const handleCheckout = () => {
@@ -46,115 +133,121 @@ const NoteDetailsPage = ({ params }: PageProps) => {
     });
   };
 
+  const discount =
+    note.originalPrice > note.price
+      ? Math.round(
+          ((note.originalPrice - note.price) / note.originalPrice) * 100,
+        )
+      : 0;
+
   return (
-    <div className="min-h-screen bg-background text-foreground py-8 md:py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Back Button */}
-        <Link
-          href="/notes"
-          className="inline-flex items-center gap-2 mb-6 md:mb-8 px-3 py-1.5 md:px-4 md:py-2 border-2 border-border rounded-md bg-card font-bold shadow-[2px_2px_0_0_#000] hover:bg-brutal-yellow/20 transition-colors text-sm md:text-base"
-        >
-          <LuArrowLeft className="w-4 h-4" />
-          স্টোরে ফিরে যান (Back)
-        </Link>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-start">
-          {/* Left Column - Image */}
-          <div className="space-y-6 lg:sticky lg:top-24">
-            <div className="card-brutal overflow-hidden border-3 md:border-4">
-              <div className="aspect-4/3 bg-muted relative">
-                <Image
-                  src={note.coverImage}
-                  alt={note.title}
-                  fill
-                  className="object-cover"
-                  priority
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3 md:gap-4">
-              <div className="card-brutal p-3 md:p-4 flex flex-col items-center text-center gap-1 md:gap-2">
-                <LuGraduationCap className="w-5 h-5 md:w-6 md:h-6 text-brutal-purple" />
-                <span className="text-[10px] font-bold uppercase text-muted-foreground leading-none">
-                  ক্লাস (Class)
-                </span>
-                <span className="font-black text-sm md:text-base leading-none">{note.class}</span>
-              </div>
-              <div className="card-brutal p-3 md:p-4 flex flex-col items-center text-center gap-1 md:gap-2">
-                <LuBookOpen className="w-5 h-5 md:w-6 md:h-6 text-brutal-green" />
-                <span className="text-[10px] font-bold uppercase text-muted-foreground leading-none">
-                  বিষয় (Subject)
-                </span>
-                <span className="font-black text-sm md:text-base leading-none">{note.subject}</span>
-              </div>
-              <div className="card-brutal p-3 md:p-4 flex flex-col items-center text-center gap-1 md:gap-2">
-                <LuFileText className="w-5 h-5 md:w-6 md:h-6 text-brutal-orange" />
-                <span className="text-[10px] font-bold uppercase text-muted-foreground leading-none">
-                  পৃষ্ঠা (Pages)
-                </span>
-                <span className="font-black text-sm md:text-base leading-none">{note.pages}</span>
-              </div>
+    <Shell>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-start">
+        {/* Left Column - Image */}
+        <div className="space-y-6 lg:sticky lg:top-24">
+          <div className="card-brutal overflow-hidden border-3 md:border-4">
+            <div className="aspect-4/3 bg-muted relative">
+              <Image
+                src={note.coverImage}
+                alt={note.title}
+                fill
+                className="object-cover"
+                priority
+              />
             </div>
           </div>
 
-          {/* Right Column - Details & Checkout */}
-          <div className="space-y-6 md:space-y-8">
-            <div className="space-y-4">
-              <div className="flex gap-2 text-[10px] md:text-xs font-bold uppercase tracking-wider">
-                <span className="text-brutal-purple">লেখক: {note.author}</span>
-                <span className="text-muted-foreground">•</span>
-                <span className="text-brutal-green">স্টক আছে (In Stock)</span>
-              </div>
+          <div className="grid grid-cols-3 gap-3 md:gap-4">
+            <div className="card-brutal p-3 md:p-4 flex flex-col items-center text-center gap-1 md:gap-2">
+              <LuGraduationCap className="w-5 h-5 md:w-6 md:h-6 text-brutal-purple" />
+              <span className="text-[10px] font-bold uppercase text-muted-foreground leading-none">
+                ক্লাস (Class)
+              </span>
+              <span className="font-black text-sm md:text-base leading-none">
+                {note.class || "—"}
+              </span>
+            </div>
+            <div className="card-brutal p-3 md:p-4 flex flex-col items-center text-center gap-1 md:gap-2">
+              <LuBookOpen className="w-5 h-5 md:w-6 md:h-6 text-brutal-green" />
+              <span className="text-[10px] font-bold uppercase text-muted-foreground leading-none">
+                বিষয় (Subject)
+              </span>
+              <span className="font-black text-sm md:text-base leading-none">
+                {note.subject || "—"}
+              </span>
+            </div>
+            <div className="card-brutal p-3 md:p-4 flex flex-col items-center text-center gap-1 md:gap-2">
+              <LuFileText className="w-5 h-5 md:w-6 md:h-6 text-brutal-orange" />
+              <span className="text-[10px] font-bold uppercase text-muted-foreground leading-none">
+                পৃষ্ঠা (Pages)
+              </span>
+              <span className="font-black text-sm md:text-base leading-none">
+                {note.pages || "—"}
+              </span>
+            </div>
+          </div>
+        </div>
 
-              <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight uppercase">
-                {note.title}
-              </h1>
+        {/* Right Column - Details & Checkout */}
+        <div className="space-y-6 md:space-y-8">
+          <div className="space-y-4">
+            <div className="flex gap-2 text-[10px] md:text-xs font-bold uppercase tracking-wider">
+              <span className="text-brutal-purple">লেখক: {note.author}</span>
+              <span className="text-muted-foreground">•</span>
+              <span className="text-brutal-green">স্টক আছে (In Stock)</span>
+            </div>
 
+            <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight uppercase">
+              {note.title}
+            </h1>
+
+            {note.description && (
               <p className="text-base md:text-lg font-medium text-muted-foreground leading-relaxed">
                 {note.description}
               </p>
-            </div>
+            )}
+          </div>
 
-            {/* Pricing Card */}
-            <div className="card-brutal p-5 md:p-6 bg-brutal-yellow/10 space-y-6">
-              <div className="flex items-end gap-3 md:gap-4">
-                <div className="space-y-1">
-                  <span className="text-[10px] md:text-xs font-bold text-muted-foreground uppercase tracking-wide">
-                    বিশেষ মূল্য (Special Price)
+          {/* Pricing Card */}
+          <div className="card-brutal p-5 md:p-6 bg-brutal-yellow/10 space-y-6">
+            <div className="flex items-end gap-3 md:gap-4">
+              <div className="space-y-1">
+                <span className="text-[10px] md:text-xs font-bold text-muted-foreground uppercase tracking-wide">
+                  বিশেষ মূল্য (Special Price)
+                </span>
+                <div className="flex items-baseline gap-2 md:gap-3">
+                  <span className="text-4xl md:text-5xl font-black text-brutal-purple">
+                    ₹{note.price}
                   </span>
-                  <div className="flex items-baseline gap-2 md:gap-3">
-                    <span className="text-4xl md:text-5xl font-black text-brutal-purple">
-                      ₹{note.price}
-                    </span>
+                  {note.originalPrice > note.price && (
                     <span className="text-xl md:text-2xl font-bold text-muted-foreground line-through decoration-destructive decoration-2 md:decoration-4">
                       ₹{note.originalPrice}
                     </span>
-                  </div>
-                </div>
-                <div className="badge-brutal bg-brutal-green text-white mb-1.5 md:mb-2 text-xs">
-                  {Math.round(
-                    ((note.originalPrice - note.price) / note.originalPrice) *
-                    100,
                   )}
-                  % OFF
                 </div>
               </div>
-
-              <div className="flex flex-col gap-3">
-                <button 
-                  onClick={handleCheckout}
-                  className="btn-brutal btn-brutal-purple btn-brutal-lg w-full text-base md:text-lg shadow-[4px_4px_0_0_#000] md:shadow-[6px_6px_0_0_#000]"
-                >
-                  এখনই কিনুন — Checkout
-                </button>
-                <p className="text-center text-[10px] md:text-xs font-bold text-muted-foreground mt-1 md:mt-2">
-                  নিরাপদ পেমেন্ট। সরাসরি আপনার ইমেইলে পিডিএফ পৌঁছে যাবে।
-                </p>
-              </div>
+              {discount > 0 && (
+                <div className="badge-brutal bg-brutal-green text-white mb-1.5 md:mb-2 text-xs">
+                  {discount}% OFF
+                </div>
+              )}
             </div>
 
-            {/* Features List */}
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={handleCheckout}
+                className="btn-brutal btn-brutal-purple btn-brutal-lg w-full text-base md:text-lg shadow-[4px_4px_0_0_#000] md:shadow-[6px_6px_0_0_#000]"
+              >
+                এখনই কিনুন — Checkout
+              </button>
+              <p className="text-center text-[10px] md:text-xs font-bold text-muted-foreground mt-1 md:mt-2">
+                নিরাপদ পেমেন্ট। সরাসরি আপনার ইমেইলে পিডিএফ পৌঁছে যাবে।
+              </p>
+            </div>
+          </div>
+
+          {/* Features List */}
+          {note.features.length > 0 && (
             <div className="space-y-4 pt-6 md:pt-8 border-t-2 border-border border-dashed">
               <h3 className="text-lg md:text-xl font-black uppercase">
                 কী কী থাকছে (What&apos;s Included)
@@ -165,15 +258,17 @@ const NoteDetailsPage = ({ params }: PageProps) => {
                     <div className="mt-1 w-5 h-5 rounded-full bg-brutal-green text-white flex items-center justify-center shrink-0 border-2 border-border shadow-[1px_1px_0_0_#000]">
                       <LuCheck className="w-3 h-3" />
                     </div>
-                    <span className="font-semibold text-base md:text-lg leading-tight md:leading-normal">{feature}</span>
+                    <span className="font-semibold text-base md:text-lg leading-tight md:leading-normal">
+                      {feature}
+                    </span>
                   </li>
                 ))}
               </ul>
             </div>
-          </div>
+          )}
         </div>
       </div>
-    </div>
+    </Shell>
   );
 };
 

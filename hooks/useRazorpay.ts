@@ -26,8 +26,12 @@ declare global {
   }
 }
 
+const API_BASE_URL = `${
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001"
+}/api/v1`;
+
 export const useRazorpay = () => {
-  const { userId } = useAuth();
+  const { userId, getToken } = useAuth();
   const { user } = useUser();
   const router = useRouter();
 
@@ -54,20 +58,29 @@ export const useRazorpay = () => {
       return;
     }
 
-    // 1. Create Order on Server
-    const response = await fetch("/api/razorpay/order", {
+    const token = await getToken();
+
+    // 1. Create Order on the NestJS backend (Clerk-protected)
+    const response = await fetch(`${API_BASE_URL}/razorpay/order`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      credentials: "include",
       body: JSON.stringify({ amount, productType, productId }),
     });
 
-    const orderData = await response.json();
+    const orderJson = await response.json();
 
     if (!response.ok) {
-      console.error("Order Creation Failed:", orderData.error);
-      onError?.(orderData.error);
+      console.error("Order Creation Failed:", orderJson.message);
+      onError?.(orderJson.message);
       return;
     }
+
+    // Backend wraps every response in { success, data, ... }
+    const orderData = orderJson.data;
 
     // 2. Initialize Checkout Modal
     const options = {
@@ -79,10 +92,14 @@ export const useRazorpay = () => {
       image: "https://your-logo-url.com/logo.png",
       order_id: orderData.id, 
       handler: async function (response: RazorpayResponse) {
-        // 3. Verify Payment Signature on Server
-        const verifyRes = await fetch("/api/razorpay/verify", {
+        // 3. Verify Payment Signature on the NestJS backend
+        const verifyRes = await fetch(`${API_BASE_URL}/razorpay/verify`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          credentials: "include",
           body: JSON.stringify({
             razorpay_order_id: response.razorpay_order_id,
             razorpay_payment_id: response.razorpay_payment_id,
@@ -90,13 +107,13 @@ export const useRazorpay = () => {
           }),
         });
 
-        const verifyData = await verifyRes.json();
+        const verifyJson = await verifyRes.json();
 
-        if (verifyRes.ok && verifyData.success) {
+        if (verifyRes.ok && verifyJson.success) {
           onSuccess?.();
           alert("Payment Successful!");
         } else {
-          onError?.(verifyData.message || "Verification Failed");
+          onError?.(verifyJson.message || "Verification Failed");
         }
       },
       prefill: {
