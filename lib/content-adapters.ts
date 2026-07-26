@@ -62,6 +62,19 @@ export interface JobNews {
   category: string;
   image: string;
   sourceType: string;
+  // Vacancy-posting fields (present when isPosting is true).
+  isPosting: boolean;
+  organization: string;
+  vacancies: string;
+  qualification: string;
+  eligibility: string;
+  ageLimit: string;
+  salary: string;
+  applicationFee: string;
+  lastDate: string;
+  applyLink: string;
+  notificationLink: string;
+  officialWebsite: string;
 }
 
 function normJobNews(p: Record<string, unknown>): JobNews {
@@ -76,6 +89,18 @@ function normJobNews(p: Record<string, unknown>): JobNews {
     category: str(p.category),
     image: img(p.image),
     sourceType: str(p.sourceType, "manual"),
+    isPosting: !!p.isPosting,
+    organization: str(p.organization),
+    vacancies: str(p.vacancies),
+    qualification: str(p.qualification),
+    eligibility: str(p.eligibility),
+    ageLimit: str(p.ageLimit),
+    salary: str(p.salary),
+    applicationFee: str(p.applicationFee),
+    lastDate: str(p.lastDate),
+    applyLink: str(p.applyLink),
+    notificationLink: str(p.notificationLink),
+    officialWebsite: str(p.officialWebsite),
   };
 }
 
@@ -127,3 +152,8 @@ export const toScholarship = (d: unknown): Scholarship | null =>
     : null;
 export const fetchScholarships = async (token?: string): Promise<Scholarship[]> =>
   toScholarships(await apiClient.get<unknown>("/scholarships", token));
+export const fetchScholarship = async (
+  slug: string,
+  token?: string,
+): Promise<Scholarship | null> =>
+  toScholarship(await apiClient.get<unknown>(`/scholarships/${slug}`, token));

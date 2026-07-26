@@ -2,18 +2,43 @@
 
 import React from "react";
 import { useParams, useRouter } from "next/navigation";
-import { scholarships } from "@/data/scholarships-data";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@clerk/nextjs";
+import { fetchScholarship } from "@/lib/content-adapters";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, IndianRupee, MapPin, ArrowLeft, CheckCircle2, Award, ExternalLink } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
 const ScholarshipDetailPage = () => {
-    const { slug } = useParams();
+    const params = useParams();
     const router = useRouter();
+    const { userId, getToken } = useAuth();
+    const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug ?? "";
 
-    const scholarship = scholarships.find((s) => s.slug === slug);
+    // Fetch the single scholarship from NestJS (Strapi-backed).
+    const { data: scholarship, isPending, isError } = useQuery({
+        queryKey: ["scholarship", slug, userId],
+        queryFn: async () => {
+            const token = await getToken();
+            return fetchScholarship(slug, token ?? undefined);
+        },
+        enabled: !!slug,
+    });
 
-    if (!scholarship) {
+    if (isPending) {
+        return (
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
+                <div className="h-10 w-48 border-2 border-brutal-black bg-muted/40 shadow-[4px_4px_0_0_#000] animate-pulse" />
+                <div className="h-72 border-2 border-brutal-black bg-muted/40 shadow-[4px_4px_0_0_#000] animate-pulse" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="h-64 border-2 border-brutal-black bg-muted/40 shadow-[4px_4px_0_0_#000] animate-pulse" />
+                    <div className="h-64 border-2 border-brutal-black bg-muted/40 shadow-[4px_4px_0_0_#000] animate-pulse" />
+                </div>
+            </div>
+        );
+    }
+
+    if (isError || !scholarship) {
         return (
             <div className="max-w-7xl mx-auto px-4 py-20 text-center">
                 <h2 className="text-3xl font-bold mb-4">Scholarship not found</h2>
