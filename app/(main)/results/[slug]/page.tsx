@@ -2,10 +2,10 @@
 
 import React, { use } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
 import { toJobResult } from "@/lib/content-adapters";
+import { safeHref } from "@/lib/safe-href";
 import { LuArrowLeft, LuBuilding2, LuCalendar, LuExternalLink, LuFileDown } from "react-icons/lu";
 
 const fmtDate = (d: string) =>
@@ -44,11 +44,9 @@ export default function JobResultDetail({ params }: { params: Promise<{ slug: st
           </div>
         ) : (
           <article className="space-y-6">
-            <div className="card-brutal overflow-hidden border-3">
-              <div className="aspect-video bg-muted relative">
-                <Image src={data.image} alt={data.title} fill className="object-cover" priority />
-              </div>
-            </div>
+            <span className="badge-brutal bg-brutal-green text-white text-xs uppercase">
+              {data.kind ? data.kind.replace(/-/g, " ") : "result"}
+            </span>
 
             <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tight leading-tight">
               {data.title}
@@ -75,19 +73,19 @@ export default function JobResultDetail({ params }: { params: Promise<{ slug: st
             )}
 
             <div className="flex flex-wrap gap-3 pt-2">
-              {data.officialLink && (
+              {safeHref(data.officialLink) && (
                 <a
-                  href={data.officialLink}
+                  href={safeHref(data.officialLink)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn-brutal btn-brutal-purple inline-flex items-center gap-2"
                 >
-                  Official notice <LuExternalLink className="w-4 h-4" />
+                  Check Result <LuExternalLink className="w-4 h-4" />
                 </a>
               )}
-              {data.pdfUrl && (
+              {safeHref(data.pdfUrl) && (
                 <a
-                  href={data.pdfUrl}
+                  href={safeHref(data.pdfUrl)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn-brutal btn-brutal-outline inline-flex items-center gap-2"

@@ -2,13 +2,20 @@
 
 import React from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { fetchJobResults } from "@/lib/content-adapters";
 import { LuArrowRight, LuBuilding2, LuCalendar } from "react-icons/lu";
 
 const fmtDate = (d: string) =>
   d ? new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "";
+
+const kindLabel = (k: string) => (k ? k.replace(/-/g, " ").toUpperCase() : "RESULT");
+const kindColor = (k: string) =>
+  k === "admit-card" || k === "answer-key"
+    ? "bg-brutal-purple text-white"
+    : k === "notification" || k === "counseling"
+      ? "bg-brutal-orange text-white"
+      : "bg-brutal-green text-white";
 
 export default function ResultsPage() {
   const { data, isPending, isError } = useQuery({
@@ -62,34 +69,28 @@ export default function ResultsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {items.map((r) => (
               <Link key={r.id} href={`/results/${r.slug}`} className="block h-full group">
-                <div className="card-brutal h-full flex flex-col bg-card overflow-hidden group-hover:bg-brutal-yellow/5">
-                  <div className="aspect-4/3 border-b-3 border-border bg-muted relative overflow-hidden">
-                    <Image
-                      src={r.image}
-                      alt={r.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                      sizes="(max-width:768px) 100vw, 33vw"
-                    />
-                  </div>
-                  <div className="p-5 flex flex-col flex-1 gap-2">
-                    <h3 className="font-black text-lg leading-tight uppercase line-clamp-2">
-                      {r.title}
-                    </h3>
-                    {r.organization && (
-                      <span className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
-                        <LuBuilding2 className="w-3.5 h-3.5" /> {r.organization}
-                      </span>
-                    )}
+                <div className="card-brutal h-full flex flex-col bg-card p-5 gap-3 group-hover:bg-brutal-yellow/5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className={`badge-brutal text-[10px] uppercase ${kindColor(r.kind)}`}>
+                      {kindLabel(r.kind)}
+                    </span>
                     {r.resultDate && (
-                      <span className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-muted-foreground">
                         <LuCalendar className="w-3.5 h-3.5" /> {fmtDate(r.resultDate)}
                       </span>
                     )}
-                    <span className="mt-auto pt-3 inline-flex items-center gap-1 text-sm font-black text-brutal-purple">
-                      View result <LuArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </span>
                   </div>
+                  <h3 className="font-black text-lg leading-tight uppercase line-clamp-3">
+                    {r.title}
+                  </h3>
+                  {r.organization && (
+                    <span className="text-sm font-bold text-muted-foreground flex items-center gap-1.5 line-clamp-1">
+                      <LuBuilding2 className="w-4 h-4 shrink-0" /> {r.organization}
+                    </span>
+                  )}
+                  <span className="mt-auto pt-3 inline-flex items-center gap-1 text-sm font-black text-brutal-purple">
+                    View details <LuArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </span>
                 </div>
               </Link>
             ))}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
 import { toJobNews } from "@/lib/content-adapters";
+import { safeHref } from "@/lib/safe-href";
 import {
   LuArrowLeft,
   LuCalendar,
@@ -122,11 +123,11 @@ export default function JobNewsDetail({ params }: { params: Promise<{ slug: stri
               </div>
             )}
 
-            {/* Official links */}
+            {/* Official links (safeHref blocks non-http(s) scraped URLs) */}
             <div className="flex flex-wrap gap-3 pt-2">
-              {data.applyLink && (
+              {safeHref(data.applyLink) && (
                 <a
-                  href={data.applyLink}
+                  href={safeHref(data.applyLink)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn-brutal btn-brutal-purple inline-flex items-center gap-2"
@@ -134,9 +135,9 @@ export default function JobNewsDetail({ params }: { params: Promise<{ slug: stri
                   Apply Now <LuExternalLink className="w-4 h-4" />
                 </a>
               )}
-              {data.notificationLink && (
+              {safeHref(data.notificationLink) && (
                 <a
-                  href={data.notificationLink}
+                  href={safeHref(data.notificationLink)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn-brutal inline-flex items-center gap-2"
@@ -144,9 +145,9 @@ export default function JobNewsDetail({ params }: { params: Promise<{ slug: stri
                   Notification <LuFileText className="w-4 h-4" />
                 </a>
               )}
-              {data.officialWebsite && (
+              {safeHref(data.officialWebsite) && (
                 <a
-                  href={data.officialWebsite}
+                  href={safeHref(data.officialWebsite)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn-brutal inline-flex items-center gap-2"
@@ -157,9 +158,9 @@ export default function JobNewsDetail({ params }: { params: Promise<{ slug: stri
               {!data.applyLink &&
                 !data.notificationLink &&
                 !data.officialWebsite &&
-                data.sourceLink && (
+                safeHref(data.sourceLink) && (
                   <a
-                    href={data.sourceLink}
+                    href={safeHref(data.sourceLink)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn-brutal btn-brutal-purple inline-flex items-center gap-2"

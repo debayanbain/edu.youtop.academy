@@ -24,6 +24,7 @@ import {
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
+  { label: "Jobs", href: "/notices" },
   { label: "E-Books", href: "/ebooks" },
   { label: "Notes", href: "/notes" },
   { label: "Job Results", href: "/results" },

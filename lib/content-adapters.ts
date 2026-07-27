@@ -22,6 +22,8 @@ export interface JobResult {
   pdfUrl: string | null;
   image: string;
   sourceType: string;
+  /** result | admit-card | answer-key | merit-list | counseling | cutoff | notification */
+  kind: string;
 }
 
 function normJobResult(p: Record<string, unknown>): JobResult {
@@ -37,6 +39,7 @@ function normJobResult(p: Record<string, unknown>): JobResult {
     pdfUrl: typeof p.pdfUrl === "string" && p.pdfUrl ? p.pdfUrl : null,
     image: img(p.image),
     sourceType: str(p.sourceType, "manual"),
+    kind: str(p.kind),
   };
 }
 
@@ -48,6 +51,100 @@ export const toJobResult = (d: unknown): JobResult | null =>
     : null;
 export const fetchJobResults = async (): Promise<JobResult[]> =>
   toJobResults(await apiClient.get<unknown>("/job-results"));
+
+/* --------------------------- Notices (aggregator) ------------------------- */
+/* Backed by the NestJS Postgres `notices` pipeline: GET /notices (filtered,
+ * paginated) and GET /notices/types (enum + counts). Distinct from the Strapi
+ * job-results/job-news/scholarships above. */
+
+export interface Notice {
+  id: string;
+  /** job|result|admit_card|answer_key|notification|scholarship|admission|cutoff|merit_list */
+  noticeType: string;
+  title: string;
+  orgName: string;
+  /** Official government source page/PDF — opened in a new tab. */
+  sourceUrl: string;
+  publishedDate: string;
+  seoDescription: string;
+}
+
+export interface NoticePage {
+  items: Notice[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+function normNotice(p: Record<string, unknown>): Notice {
+  return {
+    id: str(p.id),
+    noticeType: str(p.noticeType, "notification"),
+    title: str(p.title, "Untitled"),
+    orgName: str(p.orgName),
+    sourceUrl: str(p.sourceUrl),
+    publishedDate: str(p.publishedDate),
+    seoDescription: str(p.seoDescription),
+  };
+}
+
+export interface FetchNoticesParams {
+  type?: string;
+  orgName?: string;
+  /** Free-text search over title + org. */
+  q?: string;
+  page?: number;
+  limit?: number;
+  status?: "active" | "expired" | "all";
+}
+
+export const fetchNotices = async (
+  params: FetchNoticesParams = {},
+): Promise<NoticePage> => {
+  const qs = new URLSearchParams();
+  if (params.type) qs.set("type", params.type);
+  if (params.orgName) qs.set("orgName", params.orgName);
+  if (params.q) qs.set("q", params.q);
+  if (params.page) qs.set("page", String(params.page));
+  if (params.limit) qs.set("limit", String(params.limit));
+  if (params.status) qs.set("status", params.status);
+  const q = qs.toString();
+  const d = await apiClient.get<{
+    items?: unknown[];
+    total?: number;
+    page?: number;
+    limit?: number;
+    totalPages?: number;
+  }>(`/notices${q ? `?${q}` : ""}`);
+  return {
+    items: Array.isArray(d?.items)
+      ? d.items.map((x) => normNotice(x as Record<string, unknown>))
+      : [],
+    total: Number(d?.total ?? 0),
+    page: Number(d?.page ?? 1),
+    limit: Number(d?.limit ?? 20),
+    totalPages: Number(d?.totalPages ?? 0),
+  };
+};
+
+export interface NoticeTypeCount {
+  type: string;
+  count: number;
+}
+
+export const fetchNoticeTypeCounts = async (): Promise<{
+  types: NoticeTypeCount[];
+  total: number;
+}> => {
+  const d = await apiClient.get<{ types?: NoticeTypeCount[]; total?: number }>(
+    "/notices/types",
+  );
+  return {
+    types: Array.isArray(d?.types) ? d.types : [],
+    total: Number(d?.total ?? 0),
+  };
+};
 
 /* -------------------------------- Job News -------------------------------- */
 
